@@ -1,4 +1,5 @@
-﻿using Cosmos.Core.Memory;
+﻿using Cosmos.Core;
+using Cosmos.Core.Memory;
 using Cosmos.System.FileSystem;
 using Cosmos.System.FileSystem.Listing;
 using Cosmos.System.FileSystem.VFS;
@@ -6,6 +7,7 @@ using IL2CPU.API.Attribs;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Threading;
 using Sys = Cosmos.System;
 
@@ -23,6 +25,7 @@ namespace Cosmares
         public const string gzFileSymbol = ""; // please set this to `$` if using .bin.gz as extension.
         public static readonly Color kernelAccentColor = Color.DarkCyan;
         public static readonly ConsoleColor consoleKernelAccentColor = ConsoleColor.Blue;
+        public static readonly ConsoleColor consoleKernelUpdatesColor = ConsoleColor.Magenta;
         public static List<DirectoryEntry> AvailableDisks = new List<DirectoryEntry>();
         // public static List<Sys.FileSystem.Listing.DirectoryEntry> AvailableVolumes = new List<Sys.FileSystem.Listing.DirectoryEntry>();
         public static int AvailableDisksel = 0;
@@ -167,12 +170,31 @@ namespace Cosmares
             FAIL
         }
 
+        public static void DrawUpdate(string Text)
+        {
+            ConsoleColor fg = Console.ForegroundColor;
+            ConsoleColor bg = Console.BackgroundColor;
+            int x = Console.CursorLeft;
+            int y = Console.CursorTop;
+
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.BackgroundColor = consoleKernelUpdatesColor;
+            Console.SetCursorPosition(1, CHeight - 1);
+            Console.Write(new string(' ', 78));
+            Console.SetCursorPosition(1, CHeight - 1);
+            Console.Write(Text);
+
+            Console.ForegroundColor = fg;
+            Console.BackgroundColor = bg;
+            Console.SetCursorPosition(x, y);
+        }
+
         public static void RunCUIInstaller()
         {
-            var disks = new List<string>();
-            foreach (var disk in vfs.GetVolumes())
+            List<DriveInfo> disks = new List<DriveInfo>();
+            foreach (var drive in DriveInfo.GetDrives())
             {
-                disks.Add(disk.mName);
+                disks.Add(drive);
             }
 
             Console.BackgroundColor = consoleKernelAccentColor;
@@ -180,12 +202,10 @@ namespace Cosmares
             Console.Clear();
             Console.WriteLine(kernelName + " " + kernelVersion + " Installer (via Cosmares)");
 
-            Console.SetCursorPosition(0, CHeight);
+            Console.SetCursorPosition(2, Console.CursorTop - 1);
             // Console.CursorLeft = 0;
             // Console.CursorTop = CHeight;
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.Write("Use arrow keys to move, space to select and enter to next.");
-            Console.BackgroundColor = ConsoleColor.White;
+            DrawUpdate("[ARROWS] Move                                   [SPACE] Select;   [ENTER] Next");
             var winX = CWidth / 16;
             var winY = 3;
             var winWidth = CWidth - (CWidth / 16) - 10;
@@ -244,7 +264,7 @@ namespace Cosmares
                 Console.SetCursorPosition(boxX, boxY + i);
                 // Console.CursorLeft = boxX;
                 // Console.CursorTop = boxY + i;
-                Console.Write(disks[i]);
+                Console.Write(disks[i].VolumeLabel.Replace("  ", "").ToString() + ", " + disks[i].RootDirectory.ToString() + ", " + disks[i].DriveFormat.ToString() + ", " + (disks[i].TotalFreeSpace / 1024).ToString() + " KB free of " + (disks[i].TotalSize / 1024).ToString() + " KB");
                 Console.ForegroundColor = ConsoleColor.Black;
                 Console.BackgroundColor = ConsoleColor.Gray;
             }
@@ -280,6 +300,7 @@ namespace Cosmares
             Console.BackgroundColor = consoleKernelAccentColor;
             Console.ForegroundColor = ConsoleColor.White;
             Console.Clear();
+            DrawUpdate("Target install disk: " + selectedVal.Name + ", " + selectedVal.VolumeLabel);
             var winX1 = CWidth / 16;
             var winY1 = 3;
             var winWidth1 = CWidth - (CWidth / 16) - 10;
@@ -328,11 +349,16 @@ namespace Cosmares
                 }
                 key1 = Console.ReadKey(true);
             }
-        //shutdown
+            //shutdown
+            Console.SetCursorPosition(0, 0);
+            WriteSystemInfo(Result.FAIL, "Installer was interrupted by user");
+            System.Threading.Thread.Sleep(2000);
+            Sys.Power.Shutdown();
 
         startSetup:
             Console.BackgroundColor = consoleKernelAccentColor;
             Console.Clear();
+            DrawUpdate("Workin on disk, Please do not interrupt installation, It may harm you disk");
             Console.ForegroundColor = ConsoleColor.Black;
             var winX2 = CWidth / 16;
             var winY2 = 3;
