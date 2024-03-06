@@ -1,0 +1,66 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <!--<RuntimeIdentifier>cosmos</RuntimeIdentifier>-->
+        <Platform>cosmos</Platform>
+        <SupportsX86Intrinsics>false</SupportsX86Intrinsics>
+        <SelfContained>True</SelfContained>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <EnableGDB>False</EnableGDB>
+        <StartCosmosGDB>False</StartCosmosGDB>
+        <VisualStudioDebugPort>Pipe: Cosmos\Serial</VisualStudioDebugPort>
+        <CosmosDebugPort>Serial: COM1</CosmosDebugPort>
+        <Launch>VMware</Launch>
+        <Profile>VMware</Profile>
+        <Description>Use VMware Player or Workstation to deploy and debug.</Description>
+        <PxeInterface>192.168.0.8</PxeInterface>
+        <CompressionType>Gzip</CompressionType>
+        <RemoveBootDebugOutput>True</RemoveBootDebugOutput>
+        <AllowComments>True</AllowComments>
+        <OptimizationLevel>2</OptimizationLevel>
+        <DebugEnabled>False</DebugEnabled>
+        <VMWareEdition>Workstation</VMWareEdition>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <None Remove="Resources\limine-bios.sys" />
+      <None Remove="Resources\liminewp.bmp" />
+      <None Remove="Resources\YourKernelNameHere.bin" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="Resources\limine-bios.sys" />
+      <EmbeddedResource Include="Resources\liminewp.bmp" />
+      <EmbeddedResource Include="Resources\YourKernelNameHere.bin" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Cosmos.Common" Version="0.1.0-localbuild20240212090915" />
+        <PackageReference Include="Cosmos.Core" Version="0.1.0-localbuild20240212090915" />
+        <PackageReference Include="Cosmos.Debug.Kernel" Version="0-*" NoWarn="NU1604" />
+        <PackageReference Include="Cosmos.HAL2" Version="0.1.0-localbuild20240212090915" />
+        <PackageReference Include="Cosmos.System2" Version="0-*" NoWarn="NU1604" />
+        <PackageReference Include="Cosmos.Plugs" Version="0-*" NoWarn="NU1604" />
+		<PackageReference Include="Cosmos.Build" Version="0-*" NoWarn="NU1604" />
+        <PackageReference Include="IL2CPU.API" Version="0-*" NoWarn="NU1604" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Properties\Resources.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Resources.resx</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Update="Properties\Resources.resx">
+        <Generator>ResXFileCodeGenerator</Generator>
+        <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+    </ItemGroup>
+
+</Project>
