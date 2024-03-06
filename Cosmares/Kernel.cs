@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Threading;
+using static System.Net.Mime.MediaTypeNames;
 using Sys = Cosmos.System;
 
 namespace Cosmares
@@ -25,8 +26,9 @@ namespace Cosmares
         public const string gzFileSymbol = ""; // please set this to `$` if using .bin.gz as extension.
         public static readonly Color kernelAccentColor = Color.DarkCyan;
         public static readonly ConsoleColor consoleKernelAccentColor = ConsoleColor.Blue;
-        public static readonly ConsoleColor consoleKernelUpdatesColor = ConsoleColor.Magenta;
-        public static List<DirectoryEntry> AvailableDisks = new List<DirectoryEntry>();
+        public static readonly ConsoleColor consoleKernelUpdatesColor = ConsoleColor.Red;
+        public static readonly ConsoleColor consoleKernelProgressBarColor = ConsoleColor.Green;
+        //public static List<DirectoryEntry> AvailableDisks = new List<DirectoryEntry>();
         // public static List<Sys.FileSystem.Listing.DirectoryEntry> AvailableVolumes = new List<Sys.FileSystem.Listing.DirectoryEntry>();
         public static int AvailableDisksel = 0;
         public static int selected = 0;
@@ -84,7 +86,6 @@ namespace Cosmares
             }
             WriteSystemInfo(Result.OK, "All files checks have been passed!");
             WriteSystemInfo(Result.OK, "Storing lists of all disks available.");
-            AvailableDisks = vfs.GetVolumes();
             // AvailableVolumes = VFSManager.GetVolumes();
             if (!GUIMode)
             {
@@ -183,6 +184,46 @@ namespace Cosmares
             Console.Write(new string(' ', 78));
             Console.SetCursorPosition(1, CHeight - 1);
             Console.Write(Text);
+
+            Console.ForegroundColor = fg;
+            Console.BackgroundColor = bg;
+            Console.SetCursorPosition(x, y);
+        }
+
+        public static void DrawInstallProgressBar(int progress)
+        {
+            ConsoleColor fg = Console.ForegroundColor;
+            ConsoleColor bg = Console.BackgroundColor;
+            int x = Console.CursorLeft;
+            int y = Console.CursorTop;
+
+            //"    START     FORMAT     PARTITIONING     BOOT     SYSTEM FILES     REBOOT  "
+
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.BackgroundColor = ConsoleColor.Red;
+            Console.SetCursorPosition(1, CHeight - 1);
+            Console.Write(new string(' ', 78));
+            Console.BackgroundColor = consoleKernelProgressBarColor;
+            Console.SetCursorPosition(1, CHeight - 1);
+            Console.Write(new string(' ', progress));
+            Console.ResetColor(); Console.BackgroundColor = (ConsoleColor)0;
+            Console.SetCursorPosition(6, CHeight - 1);
+            Console.Write("START");
+
+            Console.SetCursorPosition(16, CHeight - 1);
+            Console.Write("FORMAT");
+
+            Console.SetCursorPosition(28, CHeight - 1);
+            Console.Write("PARTITIONING");
+
+            Console.SetCursorPosition(45, CHeight - 1);
+            Console.Write("BOOT");
+
+            Console.SetCursorPosition(54, CHeight - 1);
+            Console.Write("SYSTEM FILES");
+
+            Console.SetCursorPosition(71, CHeight - 1);
+            Console.Write("REBOOT");
 
             Console.ForegroundColor = fg;
             Console.BackgroundColor = bg;
@@ -325,7 +366,7 @@ namespace Cosmares
             Console.Write("Drive (" + selectedVal + ")");
             Console.SetCursorPosition(winX1 + 5, winY1 + 7);
             Console.Write("|--Boot/EFI partition (with Limine) [FAT32, MBR]");
-            Console.SetCursorPosition(winX1 + 5, winY1 + 8);
+            Console.SetCursorPosition(winX1 + 5, winY1 + 8); 
             Console.Write("|--Filesystem partition (for " + kernelName + ") [FAT32, MBR]");
 
             Console.SetCursorPosition(winX1 + 2, winY1 + 10);
@@ -367,27 +408,54 @@ namespace Cosmares
             Console.BackgroundColor = ConsoleColor.White;
             for (var i = 0; i < winHeight2; i++)
             {
-                Console.SetCursorPosition(winX2, winY2 + i);
+                Console.SetCursorPosition(winX2, winY2 + i); 
                 // Console.CursorLeft = winX2;
                 // Console.CursorTop = winY2 + i;
                 Console.Write(new string(' ', winWidth2));
             }
 
             //int installationStartTime = RTC.Hour * 3600 + RTC.Minute * 60 + RTC.Second;
+
             Console.SetCursorPosition(winX2 + 2, winY2 + 1);
             Console.Write("Cosmares Installer has started");
+
+            DrawInstallProgressBar(6);
+            System.Threading.Thread.Sleep(1000); // Just wait
+
             Console.SetCursorPosition(winX2 + 5, winY2 + 3);
             Console.Write("Formatting the disk..");
+
+            DrawInstallProgressBar(16);
+            System.Threading.Thread.Sleep(2000);
+
             Console.SetCursorPosition(winX2 + 5, winY2 + 4);
             Console.Write("Making partitions on the disk..");
+
+            DrawInstallProgressBar(28);
+            System.Threading.Thread.Sleep(2000);
+
             Console.SetCursorPosition(winX2 + 5, winY2 + 5);
             Console.Write("Copying bootloader files..");
+
+            DrawInstallProgressBar(45);
+            System.Threading.Thread.Sleep(2000);
+
             Console.SetCursorPosition(winX2 + 5, winY2 + 6);
             Console.Write("Installing " + kernelName + "..");
+
+            DrawInstallProgressBar(54);
+            System.Threading.Thread.Sleep(2000);
+
             Console.SetCursorPosition(winX2 + 5, winY2 + 7);
             Console.Write("Installing " + kernelName + "'s files.");
 
-            Console.ReadKey();
+            DrawInstallProgressBar(54);
+            System.Threading.Thread.Sleep(2000);
+
+            DrawInstallProgressBar(71);
+            System.Threading.Thread.Sleep(1000);
+            DrawInstallProgressBar(78);
+            Sys.Power.Shutdown();
         }
     }
 }
