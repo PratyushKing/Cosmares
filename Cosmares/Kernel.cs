@@ -9,6 +9,10 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
+using System.Reflection.Metadata.Ecma335;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using static System.Net.Mime.MediaTypeNames;
 using Sys = Cosmos.System;
@@ -38,6 +42,7 @@ namespace Cosmares
 
         // PLEASE DO NOT MODIFY THESE RESOURCES IN THE SETTINGS!
         [ManifestResourceStream(ResourceName = "Cosmares.Resources.empty_sector")] public static byte[] emptysector; // 10 empty sectors for disk fill
+        [ManifestResourceStream(ResourceName = "Cosmares.Resources.limine")] public static byte[] limine_bootsector; // boot sectot
         [ManifestResourceStream(ResourceName = "Cosmares.Resources.limine-bios.sys")] public static byte[] LimineBIOSSys; // boot\limine-bios.sys
         public const string LimineConfig = "TIMEOUT=0\r\nVERBOSE=yes\r\n\r\nTERM_WALLPAPER=boot:///boot/liminewp.bmp\r\nINTERFACE_RESOLUTION=800x600x32\r\n\r\n:" + kernelName + ".bin\r\n    COMMENT=Boot " + kernelName + kernelFileExtension + " using multiboot2.\r\n\r\n    PROTOCOL=multiboot2\r\n    KERNEL_PATH=" + gzFileSymbol + "boot:///boot/" + kernelName + ".bin\r\n"; // boot\limine.cfg
 
@@ -378,7 +383,7 @@ namespace Cosmares
             Console.Write("Drive (" + selectedVal + ")");
             Console.SetCursorPosition(winX1 + 5, winY1 + 7);
             Console.Write("|--Boot/EFI partition (with Limine) [FAT32, MBR]");
-            Console.SetCursorPosition(winX1 + 5, winY1 + 8); 
+            Console.SetCursorPosition(winX1 + 5, winY1 + 8);
             Console.Write("|--Filesystem partition (for " + kernelName + ") [FAT32, MBR]");
 
             Console.SetCursorPosition(winX1 + 2, winY1 + 10);
@@ -425,7 +430,7 @@ namespace Cosmares
             Console.BackgroundColor = ConsoleColor.White;
             for (var i = 0; i < winHeight2; i++)
             {
-                Console.SetCursorPosition(winX2, winY2 + i); 
+                Console.SetCursorPosition(winX2, winY2 + i);
                 // Console.CursorLeft = winX2;
                 // Console.CursorTop = winY2 + i;
                 Console.Write(new string(' ', winWidth2));
@@ -528,15 +533,15 @@ namespace Cosmares
                 }
                 else if (key2.Key == ConsoleKey.Enter)
                 {
-                    if(selected == 0)
+                    if (selected == 0)
                     {
                         vfs.Disks[SelectedDisk].FormatPartition(0, "FAT32", true);
                     }
-                    else if(selected == 1)
+                    else if (selected == 1)
                     {
                         vfs.Disks[SelectedDisk].FormatPartition(0, "FAT32", false);
                     }
-                    else if(selected == 2)
+                    else if (selected == 2)
                     {
                         int start = RTC.Hour * 3600 + RTC.Minute * 60 + RTC.Second;
                         int end = 0;
@@ -545,7 +550,7 @@ namespace Cosmares
                         for (int i = 0; i < (((vfs.Disks[SelectedDisk].Size) / 512) / 10); i++)
                         {
                             vfs.Disks[SelectedDisk].Host.WriteBlock((ulong)(i - 1), 10, ref emptysector);
-                            Console.SetCursorPosition(0,1);
+                            Console.SetCursorPosition(0, 1);
                             Console.Write("Formated " + (i * 10) + " / " + (vfs.Disks[SelectedDisk].Size / 512) + " Run time: " + (end - start) + "s" + " ETA: " + eta.ToString() + "s" + new string(' ', 5));
                             Heap.Collect();
                             if (i.ToString().EndsWith("00"))
@@ -559,9 +564,9 @@ namespace Cosmares
                             }
                         }
                     }
-                    else if(selected == 3)
+                    else if (selected == 3)
                     {
-                        
+
                     }
 
                     DrawInstallProgressBar(20);
@@ -587,9 +592,84 @@ namespace Cosmares
 
             DrawInstallProgressBar(30);
 
+            Thread.Sleep(1000);
+
+            Console.SetCursorPosition(0, 2);
+
+            WriteSystemInfo(Result.WARN, "Setupping partitions for you");
+
+            Thread.Sleep(1000);
+            WriteSystemInfo(Result.WARN, "Partition: 0, 0:/, 96 Mb, BOOT");
+
+            vfs.Disks[SelectedDisk].CreatePartition(96);
+            WriteSystemInfo(Result.OK, "Done!, Now Enter size(in MB) for Partition 1(max " + ((vfs.Disks[SelectedDisk].Size / 1048576) - 96) + "): ");
+            string size = Console.ReadLine();
+
+            while (Int32.Parse(size) - 1 >= ((vfs.Disks[SelectedDisk].Size / 1048576) - 96))
+            {
+                WriteSystemInfo(Result.ERROR, "Size is cannot be bigger than disk's size!! Enter new size: ");
+                size = Console.ReadLine();
+            }
+
+            WriteSystemInfo(Result.WARN, "Partition: 1, 1:/, " + size + " Mb, HOME");
+
+            vfs.Disks[SelectedDisk].CreatePartition(Int32.Parse(size));
+
+            WriteSystemInfo(Result.OK, "All partitions are set up!!! Now lets move to writing boot!");
+
+            DrawInstallProgressBar(39);
+
             Thread.Sleep(5000);
+            goto updateBootsector;
+
+            return;
+
+
+        updateBootsector:
+
+            Console.BackgroundColor = consoleKernelAccentColor;
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Clear();
+
+            Console.SetCursorPosition(0, 0);
+            Console.WriteLine(kernelName + " " + kernelVersion + " Installer (via Cosmares)");
+
+            DrawInstallProgressBar(45);
+            Console.SetCursorPosition(0, 2);
+            Console.WriteLine("Now lets install Limine!");
+            Thread.Sleep(1000);
+            try
+            {
+                byte[] byt = new byte[512];
+
+
+                vfs.Disks[SelectedDisk].Host.ReadBlock(0, 1, ref byt);
+
+                string boot = Encoding.ASCII.GetString(limine_bootsector);
+
+                
+
+                Console.WriteLine(boot);
+                byte[] data = Encoding.ASCII.GetBytes(boot);
+
+                WriteSystemInfo(Result.PASS, "Bytes prepared, lets write boot sector");
+                Console.WriteLine(data.Length);
+
+                vfs.Disks[SelectedDisk].Host.WriteBlock(0, 1, ref data);
+
+            }
+            catch (Exception ex)
+            {
+                WriteSystemInfo(Result.PANIC, "INSTALLER cannot continue, you arent able to boot you os. "+ ex.Message);
+                Thread.Sleep(10000);
+                Sys.Power.Shutdown();
+            }
+
+            Thread.Sleep(1000);
+
 
             return;
         }
+
     }
 }
