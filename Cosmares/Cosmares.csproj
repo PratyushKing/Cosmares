@@ -26,12 +26,14 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <None Remove="Resources\empty_sector" />
       <None Remove="Resources\limine-bios.sys" />
       <None Remove="Resources\liminewp.bmp" />
       <None Remove="Resources\YourKernelNameHere.bin" />
     </ItemGroup>
 
     <ItemGroup>
+      <EmbeddedResource Include="Resources\empty_sector" />
       <EmbeddedResource Include="Resources\limine-bios.sys" />
       <EmbeddedResource Include="Resources\liminewp.bmp" />
       <EmbeddedResource Include="Resources\YourKernelNameHere.bin" />
