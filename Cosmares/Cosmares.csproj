@@ -31,6 +31,7 @@
       <None Remove="Resources\empty_sector" />
       <None Remove="Resources\limine" />
       <None Remove="Resources\limine-bios.sys" />
+      <None Remove="Resources\limine2" />
       <None Remove="Resources\liminewp.bmp" />
       <None Remove="Resources\YourKernelNameHere.bin" />
     </ItemGroup>
@@ -39,6 +40,7 @@
       <EmbeddedResource Include="Resources\empty_sector" />
       <EmbeddedResource Include="Resources\limine-bios.sys" />
       <EmbeddedResource Include="Resources\limine" />
+      <EmbeddedResource Include="Resources\limine2" />
       <EmbeddedResource Include="Resources\liminewp.bmp" />
       <EmbeddedResource Include="Resources\YourKernelNameHere.bin" />
     </ItemGroup>

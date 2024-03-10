@@ -1,6 +1,8 @@
 ﻿using Cosmos.Core;
 using Cosmos.Core.Memory;
 using Cosmos.HAL;
+using Cosmos.HAL.BlockDevice;
+using Cosmos.System;
 using Cosmos.System.FileSystem;
 using Cosmos.System.FileSystem.Listing;
 using Cosmos.System.FileSystem.VFS;
@@ -15,6 +17,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using static System.Net.Mime.MediaTypeNames;
+using Console = System.Console;
 using Sys = Cosmos.System;
 
 namespace Cosmares
@@ -24,9 +27,9 @@ namespace Cosmares
         public static CosmosVFS vfs = new CosmosVFS();
         public static int finalSelection = 0;
 
-        public const string kernelName = "YourKernelNameHere";
+        public const string kernelName = "Cosmares Debug Kernel";
         public const string kernelFileExtension = ".bin"; // if using gzip compression add `.gz` as the end.
-        public const string kernelVersion = "YourKernelVersionHere"; // set your kernel version such as v1.0
+        public const string kernelVersion = "v1.0"; // set your kernel version such as v1.0
         public const string cosmaresVersion = "v1.0"; // DO NOT EDIT THIS
         public const string gzFileSymbol = ""; // please set this to `$` if using .bin.gz as extension.
         public static readonly Color kernelAccentColor = Color.DarkCyan;
@@ -42,7 +45,8 @@ namespace Cosmares
 
         // PLEASE DO NOT MODIFY THESE RESOURCES IN THE SETTINGS!
         [ManifestResourceStream(ResourceName = "Cosmares.Resources.empty_sector")] public static byte[] emptysector; // 10 empty sectors for disk fill
-        [ManifestResourceStream(ResourceName = "Cosmares.Resources.limine")] public static byte[] limine_bootsector; // boot sectot
+        [ManifestResourceStream(ResourceName = "Cosmares.Resources.limine")] public static byte[] limine_bootsector; // boot sector
+        [ManifestResourceStream(ResourceName = "Cosmares.Resources.limine2")] public static byte[] limine_stage2; // limine stage 2
         [ManifestResourceStream(ResourceName = "Cosmares.Resources.limine-bios.sys")] public static byte[] LimineBIOSSys; // boot\limine-bios.sys
         public const string LimineConfig = "TIMEOUT=0\r\nVERBOSE=yes\r\n\r\nTERM_WALLPAPER=boot:///boot/liminewp.bmp\r\nINTERFACE_RESOLUTION=800x600x32\r\n\r\n:" + kernelName + ".bin\r\n    COMMENT=Boot " + kernelName + kernelFileExtension + " using multiboot2.\r\n\r\n    PROTOCOL=multiboot2\r\n    KERNEL_PATH=" + gzFileSymbol + "boot:///boot/" + kernelName + ".bin\r\n"; // boot\limine.cfg
 
@@ -637,31 +641,39 @@ namespace Cosmares
             DrawInstallProgressBar(45);
             Console.SetCursorPosition(0, 2);
             Console.WriteLine("Now lets install Limine!");
-            Thread.Sleep(1000);
             try
             {
+
+                //PLEASE DO NOT EDIT, IF IT WORK DONT TOUCH IT!!!
+
                 byte[] byt = new byte[512];
-
-
+                
                 vfs.Disks[SelectedDisk].Host.ReadBlock(0, 1, ref byt);
 
                 string boot = Encoding.ASCII.GetString(limine_bootsector);
 
-                
+
 
                 Console.WriteLine(boot);
-                byte[] data = Encoding.ASCII.GetBytes(boot);
+                byte[] data = new byte[512];
 
+                Console.WriteLine("1");
+                Span<byte> PartitionEntrys = new Span<byte>(byt,446,66);
+                byte[] part = PartitionEntrys.ToArray();
+                Console.WriteLine("2");
+                data = Encoding.ASCII.GetBytes(boot).Concat(PartitionEntrys.ToArray()).ToArray();
+                Console.WriteLine("3");
                 WriteSystemInfo(Result.PASS, "Bytes prepared, lets write boot sector");
-                Console.WriteLine(data.Length);
-
                 vfs.Disks[SelectedDisk].Host.WriteBlock(0, 1, ref data);
+                Console.WriteLine("4");
+                vfs.Disks[SelectedDisk].Host.WriteBlock(5, 33, ref limine_stage2);
+                Console.WriteLine("5");
 
             }
             catch (Exception ex)
             {
                 WriteSystemInfo(Result.PANIC, "INSTALLER cannot continue, you arent able to boot you os. "+ ex.Message);
-                Thread.Sleep(10000);
+                Thread.Sleep(5000); 
                 Sys.Power.Shutdown();
             }
 
